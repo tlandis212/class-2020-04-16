@@ -42,7 +42,26 @@ We are using the [**tidymodels** collection of packages](https://www.tidymodels.
 
 # Scene 1
 
-**Prompt:** Following [the approach](https://davidkane9.github.io/PPBDS/13-classification.html#professional-models) outlined in the *Primer*, use **tidymodels** to estimate a logistic regression in which `vote` is the dependent variable and `ideology`, `income`, `gender`, and `race` are the independent variables. 
+**Prompt:** Following [the approach](https://davidkane9.github.io/PPBDS/13-classification.html#professional-models) outlined in the *Primer*, use **tidymodels** to estimate a logistic regression in which `vote` is the dependent variable and `ideology`, `income`, `gender`, and `race` are the independent variables.
+
+```{r scene1, echo=FALSE}
+
+logistic_mod <- logistic_reg() %>%
+  set_engine("glm")
+
+logistic_fit <- fit(logistic_mod,
+                    factor(dvote) ~ (ideology + income + gender + race),
+                    data = nes)
+
+logistic_fit$fit %>%
+  tidy(conf.int = TRUE) %>%
+  select(term, estimate, conf.low, conf.high) %>% 
+  mutate(estimate_divided = estimate / 4) %>% 
+  mutate(conf.low_divided = conf.low / 4) %>% 
+  mutate(conf.high_divided = conf.high / 4)
+
+```
+
 
 Useful functions include `logistic_reg()`, `set_engine()`, and `fit()`.
 
@@ -50,7 +69,7 @@ Interpret the coefficient of `income`.
 
 Write a sentence to your smart-but-not-mathematical boss which explains the association of income with preference for the Democratic candidate. Include a notion of uncertainty.
 
-
+As income increases by a dollar, the probability that a person voted for a Democrat changes by -0.05. We could be off by a bit, but we're 95% sure that the probability changes somewhere between -0.068 and -0.040. 
 
 # Scene 2
 
