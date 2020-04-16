@@ -75,6 +75,24 @@ As income increases by a dollar, the probability that a person voted for a Democ
 
 **Prompt:** Review [CART models](https://davidkane9.github.io/PPBDS/13-classification.html#classification-and-regression-trees-cart). Using the all the same independent variables as in Scene 1, estimate a CART model in which `vote` is the dependent variable.
 
+```{r}
+
+tree_mod <- decision_tree() %>%  
+  set_engine("rpart",model = TRUE) %>%
+  set_mode("classification")
+
+vote_tree <- fit(tree_mod,
+                    factor(dvote) ~ (ideology + income + gender + race),
+                    data = nes)
+
+vote_tree$fit
+
+vote_tree$fit %>% 
+  prp(extra = 6, varlen = 0, faclen = 0)
+
+```
+
+
 Hint: In addition to the functions you used in Scene 1, you may find `set_mode()` and `prp()` to be helpful.
 
 Print the fitted model.
@@ -82,6 +100,8 @@ Print the fitted model.
 Plot the fitted model. You may find the `prp()` function to be useful. I like `extra = 6` as an argument. Read the help page to understand what it means.
 
 Write two sentences explaining to your smart-but-not-mathematical boss what the model means and how he should interpret it. Make sure to discuss why some variables, like gender, are not used in the model. He thinks that gender matters to voting!
+
+This is a flow chart that uses the most significant factors to determine the probability of whether someone will vote for a Democrat. This tells us that if someone does not have an ideology of 4 or higher, there's a 79% change they voted for a Democrat. If someone has an ideology of 4 or higher and 
 
 Optional: Can you write a simple dplr pipe which does, more or less, what the CART is doing, at least for the first node, and then confirms the numbers in the plot?
 
@@ -94,13 +114,25 @@ Optional: Can you write a simple dplr pipe which does, more or less, what the CA
 
 Hint: In addition to the functions you used in Scenes 1 and 2, you may find `rand_forest()` to be helpful.
 
+```{r}
+
+forest_mod <- rand_forest() %>%
+  set_engine("randomForest") %>%
+  set_mode("classification")
+
+vote_forest <- fit(forest_mod,
+                    factor(dvote) ~ (ideology + income + gender + race),
+                    data = nes)
+
+vote_forest
+```
+
+
 Print out and interpret the model.
 
 How many trees did the forest use? Would we get better results if we used a different number of trees?
 
 What is OOB error?
-
-
 
 # Scene 4
 
@@ -113,6 +145,27 @@ What is OOB error?
 3. Create a tibble with the accuracy of the prediction columns of each model.
 
 4. Is accuracy the metric to use? Would using sensitivity or specificity be more appropriate?
+
+```{r}
+
+nes %>% 
+  mutate(logistic_fit_er = predict(logistic_fit))
+
+
+house_preds <- nes %>%
+  mutate(modal = 1, logistic = predict(logistic_fit, new_data = nes) %>% pull(.pred_class), 
+         linear = (predict(logistic_fit, new_data = nes) %>%  pull(.pred_class)), 
+         tree = predict(vote_tree, new_data = nes) %>% pull(.pred_class),
+         forest = predict(vote_forest, new_data = nes) %>% pull(.pred_class))
+
+test <- tibble(modal = mean(house_preds$modal == house_preds$dvote),
+       logistic = mean(house_preds$logistic == house_preds$dvote),
+       linear = mean(house_preds$linear == house_preds$dvote),
+       tree = mean(house_preds$tree == house_preds$dvote),
+       forest = mean(house_preds$forest == house_preds$dvote))
+  
+```
+
 
 Note:
 Accuracy = (Actual 1 as 1 + Actual 0 as 0) / n
